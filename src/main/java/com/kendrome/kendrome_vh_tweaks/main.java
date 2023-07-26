@@ -52,56 +52,62 @@ public class main {
     //https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent toolTipEvent) throws IllegalAccessException {
-        var toolTip = toolTipEvent.getToolTip();
-        var itemStack = toolTipEvent.getItemStack();
-        if (itemStack == null)
-            return;
-        var item = itemStack.getItem();
-        if (item == null)
-            return;
-        if(item instanceof InscriptionItem) {
-            var data = itemStack.getTag().getCompound("data");
-            var completion =  data.getFloat("completion");
-            var instability = data.getFloat("instability");
-            var time = data.getInt("time") / 20;
+        try {
+            var toolTip = toolTipEvent.getToolTip();
+            var itemStack = toolTipEvent.getItemStack();
+            if (itemStack == null)
+                return;
+            var item = itemStack.getItem();
+            if (item == null)
+                return;
+            if (item instanceof InscriptionItem) {
+                if(itemStack == null || itemStack.getTag() == null)
+                    return;
+                var data = itemStack.getTag().getCompound("data");
+                var completion = data.getFloat("completion");
+                var instability = data.getFloat("instability");
+                var time = data.getInt("time") / 20;
 
-            toolTip.add(new TextComponent("§7" + FormatText((completion * 100) / time) + " §fcompletion/time"));
-            toolTip.add(new TextComponent("§7" + FormatText(completion / instability) + " §fcompletion/instability"));
-            toolTip.add(new TextComponent("§7" + FormatText(time / (instability * 100)) + " §ftime/instability"));
-        }
-        if (item instanceof JewelItem) {
-            VaultGearData data = VaultGearData.read(itemStack);
-            var state = data.getState();
-            if (state == VaultGearState.IDENTIFIED) {
-                var suffixes = data.getModifiers(VaultGearModifier.AffixType.SUFFIX);
-                var implicits = data.getModifiers(VaultGearModifier.AffixType.IMPLICIT);
-                int size = 0;
-                for (var implicit : implicits) {
-                    var group = implicit.getModifierGroup();
-                    if (group.equals("BaseJewelSize")) {
-                        size = (int) implicit.getValue();
-                        break;
+                toolTip.add(new TextComponent("§7" + FormatText((completion * 100) / time) + " §fcompletion/time"));
+                toolTip.add(new TextComponent("§7" + FormatText(completion / instability) + " §fcompletion/instability"));
+                toolTip.add(new TextComponent("§7" + FormatText(time / (instability * 100)) + " §ftime/instability"));
+            }
+            if (item instanceof JewelItem) {
+                VaultGearData data = VaultGearData.read(itemStack);
+                var state = data.getState();
+                if (state == VaultGearState.IDENTIFIED) {
+                    var suffixes = data.getModifiers(VaultGearModifier.AffixType.SUFFIX);
+                    var implicits = data.getModifiers(VaultGearModifier.AffixType.IMPLICIT);
+                    int size = 0;
+                    for (var implicit : implicits) {
+                        var group = implicit.getModifierGroup();
+                        if (group.equals("BaseJewelSize")) {
+                            size = (int) implicit.getValue();
+                            break;
+                        }
                     }
-                }
 
-                for (var suffix : suffixes) {
-                    if (size > 0) {
-                        var value = suffix.getValue();
-                        var relative = GetRelative(value, size);
-                        if (relative > 0) {
-                            var config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
+                    for (var suffix : suffixes) {
+                        if (size > 0) {
+                            var value = suffix.getValue();
+                            var relative = GetRelative(value, size);
+                            if (relative > 0) {
+                                var config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
 
-                            var range = config.getTierConfig(suffix);
+                                var range = config.getTierConfig(suffix);
 
-                            var min = FieldUtils.readField(range, "min", true);
-                            var max = FieldUtils.readField(range, "max", true);
-                            //var display2 = suffix.getConfigDisplay(itemStack);
-                            //var display = suffix.getDisplay(data, VaultGearModifier.AffixType.SUFFIX, itemStack, true);
-                            toolTip.add(GetJewelRelativeDisplay(suffix, relative, min, max, Screen.hasShiftDown()));
+                                var min = FieldUtils.readField(range, "min", true);
+                                var max = FieldUtils.readField(range, "max", true);
+                                //var display2 = suffix.getConfigDisplay(itemStack);
+                                //var display = suffix.getDisplay(data, VaultGearModifier.AffixType.SUFFIX, itemStack, true);
+                                toolTip.add(GetJewelRelativeDisplay(suffix, relative, min, max, Screen.hasShiftDown()));
+                            }
                         }
                     }
                 }
             }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
         }
     }
 

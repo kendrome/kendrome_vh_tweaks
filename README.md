@@ -1,9 +1,13 @@
 # Kendrome Vault Hunters Tweaks
 Tweaks for Vault Hunters
 
+## Features
+ - Tooltips show relative values for Suffixes on Jewels
+   - When holding shift it'll show the range of values
+ - Relative values for Inscriptions 
 
 
-# To fix error when trying to debug:
+### To fix error when trying to debug:
 https://discord.com/channels/889424759018901514/1092894660952858635
 1. Open your instance folder. On Curseforge, click the menu button (3 dots), then click “Open Folder”.
 2. Rename the config folder and keep it around as a backup.

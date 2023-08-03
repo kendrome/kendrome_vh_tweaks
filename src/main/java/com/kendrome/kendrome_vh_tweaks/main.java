@@ -1,35 +1,66 @@
 package com.kendrome.kendrome_vh_tweaks;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
-import iskallia.vault.config.gear.VaultGearTierConfig;
-import iskallia.vault.gear.attribute.config.FloatAttributeGenerator;
+import iskallia.vault.client.gui.screen.block.WardrobeScreen;
+import iskallia.vault.container.WardrobeContainer;
+import iskallia.vault.gear.attribute.VaultGearAttribute;
+import iskallia.vault.gear.attribute.VaultGearAttributeInstance;
+import iskallia.vault.gear.attribute.VaultGearAttributeRegistry;
+import iskallia.vault.gear.attribute.custom.EffectGearAttribute;
+import iskallia.vault.gear.attribute.type.VaultGearAttributeType;
+import iskallia.vault.gear.data.AttributeGearData;
+import iskallia.vault.gear.item.CuriosGearItem;
+import iskallia.vault.gear.item.VaultGearItem;
+import iskallia.vault.gear.trinket.GearAttributeTrinket;
+import iskallia.vault.gear.trinket.TrinketHelper;
+import iskallia.vault.init.ModGearAttributes;
+import iskallia.vault.init.ModItems;
+import iskallia.vault.integration.IntegrationCurios;
 import iskallia.vault.item.InscriptionItem;
-import net.minecraft.client.gui.screens.Screen;
+import iskallia.vault.item.MagnetItem;
+import iskallia.vault.item.gear.IdolItem;
+import iskallia.vault.item.gear.VaultArmorItem;
+import iskallia.vault.item.gear.VaultAxeItem;
+import iskallia.vault.item.gear.VaultSwordItem;
+import iskallia.vault.util.StatUtils;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SwordItem;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.slf4j.Logger;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearModifier;
 import iskallia.vault.gear.data.VaultGearData;
 import iskallia.vault.item.tool.JewelItem;
+import net.minecraft.client.Minecraft;
+import vazkii.quark.content.tools.item.SeedPouchItem;
 
-import java.util.stream.Collectors;
-import java.util.Formatter;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
-// The value here should match an entry in the META-INF/mods.toml file
+import static com.kendrome.kendrome_vh_tweaks.Helpers.FormatText;
+
 @Mod("kendrome_vh_tweaks")
 public class main {
 
@@ -37,10 +68,7 @@ public class main {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public main() {
-        // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
-
-        // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -52,7 +80,7 @@ public class main {
     //https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent toolTipEvent) throws IllegalAccessException {
-        try {
+        //try {
             var toolTip = toolTipEvent.getToolTip();
             var itemStack = toolTipEvent.getItemStack();
             if (itemStack == null)
@@ -61,7 +89,7 @@ public class main {
             if (item == null)
                 return;
             if (item instanceof InscriptionItem) {
-                if(itemStack == null || itemStack.getTag() == null)
+                if (itemStack == null || itemStack.getTag() == null)
                     return;
                 var data = itemStack.getTag().getCompound("data");
                 var completion = data.getFloat("completion");
@@ -73,107 +101,47 @@ public class main {
                 toolTip.add(new TextComponent("§7" + FormatText(time / (instability * 100)) + " §ftime/instability"));
             }
             if (item instanceof JewelItem) {
-                VaultGearData data = VaultGearData.read(itemStack);
-                var state = data.getState();
-                if (state == VaultGearState.IDENTIFIED) {
-                    var suffixes = data.getModifiers(VaultGearModifier.AffixType.SUFFIX);
-                    var implicits = data.getModifiers(VaultGearModifier.AffixType.IMPLICIT);
-                    int size = 0;
-                    for (var implicit : implicits) {
-                        var group = implicit.getModifierGroup();
-                        if (group.equals("BaseJewelSize")) {
-                            size = (int) implicit.getValue();
-                            break;
-                        }
-                    }
-
-                    for (var suffix : suffixes) {
-                        if (size > 0) {
-                            var value = suffix.getValue();
-                            var relative = GetRelative(value, size);
-                            if (relative > 0) {
-                                var config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
-
-                                var range = config.getTierConfig(suffix);
-
-                                var min = FieldUtils.readField(range, "min", true);
-                                var max = FieldUtils.readField(range, "max", true);
-                                //var display2 = suffix.getConfigDisplay(itemStack);
-                                //var display = suffix.getDisplay(data, VaultGearModifier.AffixType.SUFFIX, itemStack, true);
-                                toolTip.add(GetJewelRelativeDisplay(suffix, relative, min, max, Screen.hasShiftDown()));
-                            }
-                        }
-                    }
-                }
+                JewelComparison.ShowComparison(itemStack, toolTip);
             }
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-        }
+
+            if (!itemStack.isEmpty() && item instanceof VaultGearItem) {
+                GearComparison.ShowComparison(itemStack, toolTip);
+            }
+        //} catch (Exception e) {
+//            LOGGER.error(e.getMessage());
+//        }
     }
 
 
-
-    public float GetRelative(Object value, int size) {
-        float relative = 0;
-        if (value instanceof Float) {
-            relative = (float) value / size;
-        } else if (value instanceof Double) {
-            relative = (float) ((double) value / size);
-        } else if (value instanceof Integer) {
-            relative = (float) ((int) value / size);
+    public static Object SetNegative(Object value1) {
+        if(value1 instanceof Integer) {
+            return 0 - (Integer)value1;
+        } else if(value1 instanceof Double) {
+            return 0 - (Double)value1;
+        } else if(value1 instanceof Float) {
+            return 0 - (Float)value1;
         }
-        return relative;
+        return null;
     }
-    public TextComponent GetJewelRelativeDisplay(VaultGearModifier suffix, float relative, Object min, Object max, boolean showDetails) {
-        String name;
-        int multiplier = 1;
-        switch (suffix.getModifierIdentifier().toString().substring(10)) {
-            case "copiously":
-                multiplier = 100;
-                name = "Copiously";
-                break;
-            case "item_quantity":
-                multiplier = 100;
-                name = "Quantity";
-                break;
-            case "item_rarity":
-                multiplier = 100;
-                name = "Rarity";
-                break;
-            case "immortality":
-                multiplier = 100;
-                name = "Immortality";
-                break;
-            case "trap_disarming":
-                multiplier = 100;
-                name = "Disarm";
-                break;
-            case "mining_speed":
-                name = "Mining Speed";
-                break;
-            case "reach":
-                name = "Reach";
-                break;
-            case "durability":
-                name = "Durability";
-                break;
-            default:
-                name = suffix.getModifierGroup().substring(3);
-                break;
+    public static Object SubtractValues(Object value1, Object value2) {
+        if(value1 instanceof Integer) {
+            return (Integer)value1 - (Integer)value2;
+        } else if(value1 instanceof Double) {
+            return (Double)value1 - (Double)value2;
+        } else if(value1 instanceof Float) {
+            return (Float)value1 - (Float)value2;
         }
-        relative *= multiplier;
-        if(showDetails) {
-            var minRelative = FormatText(GetRelative(min, 90) * multiplier);
-            var maxRelative =  FormatText(GetRelative(max, 10) * multiplier);
-            return new TextComponent("§7" + FormatText(relative) + " §f" + name + "/size §7(" + minRelative  + "-" + maxRelative + ")");
-        } else {
-            return new TextComponent("§7" + FormatText(relative) + " §f" + name + "/size");
+        return null;
+    }
+    public static Object AddValues(Object value1, Object value2) {
+        if(value1 instanceof Integer) {
+            return (Integer)value1 + (Integer)value2;
+        } else if(value1 instanceof Double) {
+            return (Double)value1 + (Double)value2;
+        } else if(value1 instanceof Float) {
+            return (Float)value1 + (Float)value2;
         }
-
+        return null;
     }
 
-    public String FormatText(float value) {
-        Formatter fmt = new Formatter();
-        return fmt.format("%.2g", value).toString();
-    }
 }

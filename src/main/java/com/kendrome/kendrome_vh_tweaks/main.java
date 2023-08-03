@@ -104,7 +104,7 @@ public class main {
                 JewelComparison.ShowComparison(itemStack, toolTip);
             }
 
-            if (!itemStack.isEmpty() && item instanceof VaultGearItem) {
+            if (!itemStack.isEmpty() && item instanceof VaultGearItem && !(item instanceof  JewelItem)) {
                 GearComparison.ShowComparison(itemStack, toolTip);
             }
         //} catch (Exception e) {

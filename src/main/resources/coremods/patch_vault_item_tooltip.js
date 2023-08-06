@@ -13,7 +13,10 @@ function initializeCoreMod() {
             'transformer': function(classNode) {
                 ASMAPI.log('INFO', 'Attempting to patch VaultGearTooltipItem...');
 
+                // The method that represents the createTooltip method
                 var methodNode = null;
+
+                // Find the createTooltip method with the correct name and descriptor
                 for (var m = 0; m < classNode.methods.size(); ++m) {
                     var mn = classNode.methods.get(m);
                     if (mn.name == 'createTooltip' && mn.desc == '(Lnet/minecraft/world/item/ItemStack;Liskallia/vault/gear/tooltip/GearTooltip;)Ljava/util/List;') {
@@ -24,14 +27,14 @@ function initializeCoreMod() {
 
                 if (methodNode == null) {
                     ASMAPI.log('ERROR', 'Failed to find VaultGearTooltipItem#createTooltip');
-                    throw new Error('Failed to find VaultGearTooltipItem#createTooltip method?!');
+                    throw new Error('Failed to find VaultGearTooltipItem#createTooltip?!');
                 }
-
                 ASMAPI.log('INFO', 'Successfully found VaultGearTooltipItem#createTooltip');
 
-                var insnNode = null;
+                var insnNode;
                 var instructions = methodNode.instructions;
                 var returnInstructionIndex;
+
                 for (returnInstructionIndex = instructions.size() - 1; returnInstructionIndex > 0; returnInstructionIndex--) {
                     var instruction = instructions.get(returnInstructionIndex);
                     if (instruction.getOpcode() == Opcodes.ARETURN) {
@@ -54,16 +57,24 @@ function initializeCoreMod() {
                 }
                 ASMAPI.log('INFO', 'Successfully found VaultGearTooltipItem#createTooltip ALOAD at index ' + aloadInstructionIndex);
 
+                // Create a new InsnList to hold the instructions we want to insert
                 var insnList = new InsnList();
-                insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                insnList.add(new VarInsnNode(Opcodes.ALOAD, 4));
+
+                // Add instructions to the InsnList to load onto the stack
+                insnList.add(new VarInsnNode(Opcodes.ALOAD, 1)); // Loads the first argument (ItemStack)
+                insnList.add(new VarInsnNode(Opcodes.ALOAD, 4)); // Loads the fourth argument (GearTooltip)
+
+                // Add the method call to the GearComparison.ShowComparison() method
                 insnList.add(ASMAPI.buildMethodCall(
                     "com/kendrome/kendrome_vh_tweaks/GearComparison",
                     "ShowComparison",
                     "(Lnet/minecraft/world/item/ItemStack;Ljava/util/List;)V",
                     ASMAPI.MethodType.STATIC));
+
+                // Insert the new instructions before the ALOAD instruction
                 instructions.insertBefore(aload, insnList);
 
+                // Return the modified classNode
                 return classNode;
             }
         }

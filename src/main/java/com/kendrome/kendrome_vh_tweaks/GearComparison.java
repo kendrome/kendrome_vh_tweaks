@@ -20,6 +20,7 @@ import iskallia.vault.item.MagnetItem;
 import iskallia.vault.item.gear.IdolItem;
 import iskallia.vault.item.gear.VaultArmorItem;
 import iskallia.vault.item.gear.WandItem;
+import iskallia.vault.item.tool.JewelItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -80,7 +81,7 @@ public class GearComparison {
                 boolean bothWeapons = (equippedItem instanceof SwordItem || equippedItem instanceof AxeItem) ||
                         (item instanceof SwordItem || equippedItem instanceof AxeItem);
 
-                if (!bothWeapons && !(item instanceof MagnetItem)) {
+                if (!bothWeapons && !(item instanceof MagnetItem) || item instanceof JewelItem) {
                     return;
                 }
             }

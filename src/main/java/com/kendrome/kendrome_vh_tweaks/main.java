@@ -82,10 +82,6 @@ public class main {
         LOGGER.info("Kendrome Vault Hunters Tweaks");
     }
 
-    @SubscribeEvent void onDrawTooltip(RenderTooltipEvent event) {
-        var t = 1;
-    }
-
     //https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent toolTipEvent) throws IllegalAccessException {
@@ -114,7 +110,8 @@ public class main {
             }
 
             if (!itemStack.isEmpty() && item instanceof VaultGearItem && !(item instanceof  JewelItem)) {
-                toolTip.addAll(GearComparison.ShowComparison(itemStack));
+                // We now patch directly into the gear item.
+//                GearComparison.ShowComparison(itemStack, toolTip);
             }
         //} catch (Exception e) {
 //            LOGGER.error(e.getMessage());

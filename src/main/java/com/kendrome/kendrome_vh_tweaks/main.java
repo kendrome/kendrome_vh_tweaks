@@ -25,6 +25,8 @@ import iskallia.vault.item.gear.VaultAxeItem;
 import iskallia.vault.item.gear.VaultSwordItem;
 import iskallia.vault.util.StatUtils;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -40,12 +42,15 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
+import net.minecraftforge.client.event.RenderTooltipEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLLoader;
 import org.slf4j.Logger;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearModifier;
@@ -77,6 +82,10 @@ public class main {
         LOGGER.info("Kendrome Vault Hunters Tweaks");
     }
 
+    @SubscribeEvent void onDrawTooltip(RenderTooltipEvent event) {
+        var t = 1;
+    }
+
     //https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent toolTipEvent) throws IllegalAccessException {
@@ -105,11 +114,20 @@ public class main {
             }
 
             if (!itemStack.isEmpty() && item instanceof VaultGearItem && !(item instanceof  JewelItem)) {
-                GearComparison.ShowComparison(itemStack, toolTip);
+                toolTip.addAll(GearComparison.ShowComparison(itemStack));
             }
         //} catch (Exception e) {
 //            LOGGER.error(e.getMessage());
 //        }
+    }
+
+    @SubscribeEvent
+    public void onScreenEvent(ScreenEvent.InitScreenEvent.Post event) {
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = event.getScreen();
+        if(screen instanceof AbstractContainerScreen<?> containerScreen) {
+            var t = 1;
+        }
     }
 
 

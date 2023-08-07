@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "kendrome_vh_tweaks.refmap.json",
   "mixins": [
+    "MixinVaultGearTooltipItem"
   ],
   "client": [
   ],

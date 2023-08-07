@@ -70,7 +70,7 @@ import static com.kendrome.kendrome_vh_tweaks.Helpers.FormatText;
 public class main {
 
     // Directly reference a slf4j logger
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public main() {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -85,7 +85,7 @@ public class main {
     //https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent toolTipEvent) throws IllegalAccessException {
-        //try {
+        try {
             var toolTip = toolTipEvent.getToolTip();
             var itemStack = toolTipEvent.getItemStack();
             if (itemStack == null)
@@ -113,9 +113,9 @@ public class main {
                 // We now patch directly into the gear item.
 //                GearComparison.ShowComparison(itemStack, toolTip);
             }
-        //} catch (Exception e) {
-//            LOGGER.error(e.getMessage());
-//        }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
     }
 
     @SubscribeEvent

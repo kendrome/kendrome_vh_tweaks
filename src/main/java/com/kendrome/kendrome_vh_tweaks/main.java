@@ -105,7 +105,8 @@ public class main {
             }
 
             if (!itemStack.isEmpty() && item instanceof VaultGearItem && !(item instanceof  JewelItem)) {
-                GearComparison.ShowComparison(itemStack, toolTip);
+                // We now patch directly into the gear item.
+//                GearComparison.ShowComparison(itemStack, toolTip);
             }
         //} catch (Exception e) {
 //            LOGGER.error(e.getMessage());

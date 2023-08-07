@@ -41,13 +41,14 @@ import java.util.function.UnaryOperator;
 
 public class GearComparison {
     public static void ShowComparison(ItemStack itemStack, List<Component> toolTip) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) return;
+
         var slot = Mob.getEquipmentSlotForItem(itemStack);
         var item = itemStack.getItem();
         if(item instanceof IdolItem || item instanceof WandItem || item instanceof ShieldItem) {
             slot = EquipmentSlot.OFFHAND;
         }
-
-        var player = Minecraft.getInstance().player;
         var equippedStack = player.getItemBySlot(slot);
         var equippedItem = equippedStack.getItem();
 
@@ -334,7 +335,7 @@ public class GearComparison {
         for(int var7 = 0; var7 < var6; ++var7) {
             EquipmentSlot equipmentSlot = var5[var7];
             //if (equipmentSlot != EquipmentSlot.MAINHAND || true) {
-            ItemStack stack = (ItemStack)getItemBySlot.apply(equipmentSlot);
+            ItemStack stack = getItemBySlot.apply(equipmentSlot);
             if (!stack.isEmpty()) {
                 stack = simulateVaultGear(equipmentSlot, stack);
                 Item var11 = stack.getItem();

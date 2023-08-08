@@ -1,5 +1,6 @@
 package com.kendrome.kendrome_vh_tweaks;
 
+import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearModifier;
@@ -11,13 +12,16 @@ import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
-import java.util.Formatter;
 import java.util.List;
 
 import static com.kendrome.kendrome_vh_tweaks.Helpers.FormatText;
 
-public class JewelComparison {
-    public static void ShowComparison(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
+public class JewelRelativeTooltips {
+    public static void ShowTooltips(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
+        if(!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get() || ! Helpers.ShouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
+            return;
+        }
+
         VaultGearData data = VaultGearData.read(itemStack);
         var state = data.getState();
 
@@ -34,6 +38,8 @@ public class JewelComparison {
                 break;
             }
         }
+
+        toolTip.add(new TextComponent(""));
 
         for (var suffix : suffixes) {
             if (size > 0) {

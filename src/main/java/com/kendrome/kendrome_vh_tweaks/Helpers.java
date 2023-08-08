@@ -1,8 +1,23 @@
 package com.kendrome.kendrome_vh_tweaks;
 
+import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
+import net.minecraft.client.gui.screens.Screen;
+
 import java.util.Formatter;
 
 public class Helpers {
+    public static boolean ShouldShow(ClientConfig.HoldKeys keys) {
+        switch(keys) {
+            case Ctrl:
+                return Screen.hasControlDown();
+            case Alt:
+                return Screen.hasAltDown();
+            case Shift:
+                return Screen.hasShiftDown();
+            default:
+                return true;
+        }
+    }
     public static <T> String FormatText(T value) {
         if(IsGreaterThanEqual10(value))
             return value.toString();

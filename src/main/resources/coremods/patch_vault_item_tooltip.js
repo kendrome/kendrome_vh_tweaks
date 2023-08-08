@@ -57,12 +57,41 @@ function initializeCoreMod() {
                 }
                 ASMAPI.log('INFO', 'Successfully found VaultGearTooltipItem#createTooltip ALOAD at index ' + aloadInstructionIndex);
 
+
+
+                //Find the variables we need to pass
+                var itemStackNode = null, toolTipNode = null;
+                for (var p1 in methodNode.localVariables) {
+                    var node = methodNode.localVariables[p1];
+                    switch(node.name) {
+                        case "tooltip":
+                            toolTipNode = new VarInsnNode(Opcodes.ALOAD, node.index);
+                            break;
+                        case "stack":
+                            itemStackNode = new VarInsnNode(Opcodes.ALOAD, node.index);
+                            break;
+                    }
+                    ///Debug info
+                    //ASMAPI.log('INFO','p1: ' + node.index + " " + node.name + ' ' + node.desc + " " + node.signature);
+                }
+
+                if(itemStackNode === null) {
+                    ASMAPI.log('ERROR', 'Failed to find VaultGearTooltipItem#createTooltip itemStack variable');
+                    return classNode;
+                }
+                if(toolTipNode === null) {
+                    ASMAPI.log('ERROR', 'Failed to find VaultGearTooltipItem#createTooltip toolTip variable');
+                    return classNode;
+                }
+
                 // Create a new InsnList to hold the instructions we want to insert
                 var insnList = new InsnList();
+                insnList.add(itemStackNode);
+                insnList.add(toolTipNode);
 
-                // Add instructions to the InsnList to load onto the stack
-                insnList.add(new VarInsnNode(Opcodes.ALOAD, 1)); // Loads the first argument (ItemStack)
-                insnList.add(new VarInsnNode(Opcodes.ALOAD, 4)); // Loads the fourth argument (GearTooltip)
+
+
+                ASMAPI.log('INFO', '')
 
                 // Add the method call to the GearComparison.ShowComparison() method
                 insnList.add(ASMAPI.buildMethodCall(

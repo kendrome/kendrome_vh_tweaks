@@ -1,5 +1,6 @@
 package com.kendrome.kendrome_vh_tweaks;
 
+import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import com.mojang.authlib.GameProfile;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearAttribute;
@@ -43,6 +44,11 @@ import java.util.function.UnaryOperator;
 public class GearComparison {
     public static void ShowComparison(ItemStack itemStack, List<Component> toolTip) {
         try {
+            if(!ClientConfig.GEAR_COMPARISON_TOOLTIPS_ENABLED.get() || ! Helpers.ShouldShow(ClientConfig.GEAR_COMPARISON_TOOLTIPS_KEY.get())) {
+                return;
+            }
+
+
             LocalPlayer player = Minecraft.getInstance().player;
             if (player == null) return;
 

@@ -1,5 +1,6 @@
-package com.kendrome.kendrome_vh_tweaks;
+package com.kendrome.kendrome_vh_tweaks.tooltips;
 
+import com.kendrome.kendrome_vh_tweaks.Utils;
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
@@ -14,11 +15,11 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.util.List;
 
-import static com.kendrome.kendrome_vh_tweaks.Helpers.FormatText;
+import static com.kendrome.kendrome_vh_tweaks.Utils.formatText;
 
-public class JewelRelativeTooltips {
-    public static void ShowTooltips(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
-        if(!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get() || ! Helpers.ShouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
+public class JewelTooltips {
+    public static void appendTooltips(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
+        if(!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get() || ! Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
             return;
         }
 
@@ -115,11 +116,11 @@ public class JewelRelativeTooltips {
         //if(display.isPresent())
         //return (Component)display.get();
         if(showDetails) {
-            var minRelative = FormatText(GetRelative(min, 90) * multiplier);
-            var maxRelative =  FormatText(GetRelative(max, 10) * multiplier);
-            return new TextComponent(FormatText(relative) + " " + name + "/size §7(" + minRelative  + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
+            var minRelative = formatText(GetRelative(min, 90) * multiplier);
+            var maxRelative =  formatText(GetRelative(max, 10) * multiplier);
+            return new TextComponent(formatText(relative) + " " + name + "/size §7(" + minRelative  + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
         } else {
-            return new TextComponent(FormatText(relative) + " " + name + "/size").withStyle(displayTextComponent.getStyle());
+            return new TextComponent(formatText(relative) + " " + name + "/size").withStyle(displayTextComponent.getStyle());
         }
 
     }

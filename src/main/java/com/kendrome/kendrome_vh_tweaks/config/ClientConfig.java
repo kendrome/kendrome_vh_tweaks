@@ -2,7 +2,6 @@ package com.kendrome.kendrome_vh_tweaks.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,18 +39,12 @@ public class ClientConfig {
         INSCRIPTION_RELATIVE_TOOLTIPS_KEY = BUILDER.comment("Require key to show (None for always show)")
                 .defineEnum("Inscription relative tooltips key", HoldKeys.None);
 
-
-        var enumAsString = Stream.of(InscriptionOptions.values()).map(Enum::name).collect(Collectors.toList());
-
+        List<String> inscriptionOptions = Stream.of(InscriptionOptions.values()).map(Enum::name).collect(Collectors.toList());
         INSCRIPTIONS_RELATIVE_OPTIONS = BUILDER.comment("Which relatives values to show, Valid options [\"CompletionPerTime\", \"CompletionPerInstability\", \"TimePerInstability\"]")
                 .defineList("Inscription display options",
-                        enumAsString,
-                        //Arrays.asList(InscriptionOptions.values()),
+                        inscriptionOptions,
                         entry -> true
-                        );
-
-
-
+                );
 
         BUILDER.pop();
         SPEC = BUILDER.build();

@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.kendrome.kendrome_vh_tweaks",
+  "package": "com.kendrome.kendrome_vh_tweaks.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "kendrome_vh_tweaks.refmap.json",
   "mixins": [],

@@ -95,8 +95,8 @@ function initializeCoreMod() {
 
                 // Add the method call to the GearComparison.ShowComparison() method
                 insnList.add(ASMAPI.buildMethodCall(
-                    "com/kendrome/kendrome_vh_tweaks/GearComparison",
-                    "ShowComparison",
+                    "com/kendrome/kendrome_vh_tweaks/tooltips/GearComparisonTooltips",
+                    "showComparison",
                     "(Lnet/minecraft/world/item/ItemStack;Ljava/util/List;)V",
                     ASMAPI.MethodType.STATIC));
 

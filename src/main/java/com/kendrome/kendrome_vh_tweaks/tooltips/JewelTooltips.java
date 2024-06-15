@@ -5,6 +5,7 @@ import com.kendrome.kendrome_vh_tweaks.Utils;
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
+import iskallia.vault.gear.attribute.VaultGearAttribute;
 import iskallia.vault.gear.attribute.VaultGearModifier;
 import iskallia.vault.gear.data.VaultGearData;
 import iskallia.vault.gear.reader.DecimalModifierReader;
@@ -12,13 +13,15 @@ import iskallia.vault.init.ModGearAttributes;
 import iskallia.vault.init.ModItems;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.reflect.FieldUtils;
-
 import java.util.List;
+import java.util.Set;
 
 public class JewelTooltips {
+    private static final Set<VaultGearAttribute<?>> EXCLUDED_ATTRIBUTES = Set.of(ModGearAttributes.HAMMER_SIZE);
     private static final ItemStack DUMMY_JEWEL = new ItemStack(ModItems.JEWEL);
 
     public static void appendTooltip(ItemStack itemStack, List<Component> toolTip) {
@@ -40,7 +43,7 @@ public class JewelTooltips {
         toolTip.add(TextComponent.EMPTY);
         try {
             for (VaultGearModifier<?> suffix : data.getModifiers(VaultGearModifier.AffixType.SUFFIX)) {
-                if (!(suffix.getValue() instanceof Number value)) {
+                if (!(suffix.getValue() instanceof Number value) || EXCLUDED_ATTRIBUTES.contains(suffix.getAttribute())) {
                     continue;
                 }
 
@@ -63,9 +66,8 @@ public class JewelTooltips {
     }
 
     public static Component createTooltip(VaultGearModifier<?> suffix, float relative, Number min, Number max, boolean showDetails) {
-        int multiplier = suffix.getAttribute().getReader() instanceof DecimalModifierReader.Percentage
-                ? 100
-                : 1;
+        boolean percentage = suffix.getAttribute().getReader() instanceof DecimalModifierReader.Percentage;
+        int multiplier = percentage ? 100 : 1;
 
         String name = switch (suffix.getModifierIdentifier().toString().substring(10)) {
             case "copiously" -> "Copiously";
@@ -83,11 +85,13 @@ public class JewelTooltips {
         var display = suffix.getConfigDisplay(DUMMY_JEWEL);
         var displayTextComponent = (TextComponent) display.get();
 
+        String raw = "+" + Utils.formatText(relative) + (percentage ? "% " : " ") + name + " / size";
+        MutableComponent line = new TextComponent(raw).withStyle(displayTextComponent.getStyle());
         if (showDetails) {
             var minRelative = Utils.formatText(min.floatValue() / 35 * multiplier);
             var maxRelative = Utils.formatText(max.floatValue() / 10 * multiplier);
-            return new TextComponent(Utils.formatText(relative) + " " + name + "/size §7(" + minRelative + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
+            line.append("§7 (" + minRelative + "-" + maxRelative + ")");
         }
-        return new TextComponent(Utils.formatText(relative) + " " + name + "/size").withStyle(displayTextComponent.getStyle());
+        return line;
     }
 }

@@ -27,6 +27,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.util.Tuple;
@@ -146,7 +147,8 @@ public class GearComparisonTooltips {
         vaultGearAttributeInstance.getDisplay(DUMMY_DATA, VaultGearModifier.AffixType.IMPLICIT, ItemStack.EMPTY, true).ifPresent((displayText) -> {
             //Temporary Fix for getDisplay returning wrong values for attack_speed
             if (vaultGearAttributeInstance.getAttribute() == ModGearAttributes.ATTACK_SPEED) {
-                displayText = new TextComponent(Utils.formatText((Double) vaultGearAttributeInstance.getValue())).append(new TextComponent(" Attack Speed"));
+                displayText = new TextComponent(Utils.formatText((Double) vaultGearAttributeInstance.getValue()))
+                        .append(" Attack Speed").withStyle(Style.EMPTY.withColor(16767592));
             }
 
             toolTip.add(new TextComponent(prefix).withStyle(formatting).append(displayText));

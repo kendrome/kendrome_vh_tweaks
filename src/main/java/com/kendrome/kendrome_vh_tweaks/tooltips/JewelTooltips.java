@@ -84,7 +84,7 @@ public class JewelTooltips {
         var displayTextComponent = (TextComponent) display.get();
 
         if (showDetails) {
-            var minRelative = Utils.formatText(min.floatValue() / 90 * multiplier);
+            var minRelative = Utils.formatText(min.floatValue() / 35 * multiplier);
             var maxRelative = Utils.formatText(max.floatValue() / 10 * multiplier);
             return new TextComponent(Utils.formatText(relative) + " " + name + "/size §7(" + minRelative + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
         }

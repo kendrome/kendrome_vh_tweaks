@@ -89,10 +89,6 @@ function initializeCoreMod() {
                 insnList.add(itemStackNode);
                 insnList.add(toolTipNode);
 
-
-
-                ASMAPI.log('INFO', '')
-
                 // Add the method call to the KendromeVhTweaks#tweakTooltips() method
                 insnList.add(ASMAPI.buildMethodCall(
                     "com/kendrome/kendrome_vh_tweaks/KendromeVhTweaks",

@@ -43,7 +43,7 @@ public class JewelTooltips {
             }
 
             float relative = value.floatValue() / size;
-            VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
+            VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack).get();
 
             var range = config.getTierConfig(suffix);
             var minGeneric = FieldUtils.readField(range, "min", true);

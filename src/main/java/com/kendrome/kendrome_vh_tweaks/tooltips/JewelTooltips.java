@@ -6,6 +6,8 @@ import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearModifier;
 import iskallia.vault.gear.data.VaultGearData;
+import iskallia.vault.gear.reader.DecimalModifierReader;
+import iskallia.vault.init.ModGearAttributes;
 import iskallia.vault.init.ModItems;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -15,113 +17,72 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.util.List;
 
-import static com.kendrome.kendrome_vh_tweaks.Utils.formatText;
-
 public class JewelTooltips {
+    private static final ItemStack DUMMY_JEWEL = new ItemStack(ModItems.JEWEL);
+
     public static void appendTooltips(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
-        if(!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get() || ! Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
+        if (!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get()
+                || !Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
             return;
         }
 
         VaultGearData data = VaultGearData.read(itemStack);
-        var state = data.getState();
-
-        if(state != VaultGearState.IDENTIFIED)
+        if (data.getState() != VaultGearState.IDENTIFIED) {
             return;
-
-        var suffixes = data.getModifiers(VaultGearModifier.AffixType.SUFFIX);
-        var implicits = data.getModifiers(VaultGearModifier.AffixType.IMPLICIT);
-        int size = 0;
-        for (var implicit : implicits) {
-            var group = implicit.getModifierGroup();
-            if (group.equals("BaseJewelSize")) {
-                size = (int) implicit.getValue();
-                break;
-            }
         }
 
-        toolTip.add(new TextComponent(""));
+        int size = data.getFirstValue(ModGearAttributes.JEWEL_SIZE).orElse(0);
+        if (size <= 0) {
+            return;
+        }
 
-        for (var suffix : suffixes) {
-            if (size > 0) {
-                var value = suffix.getValue();
-                var relative = GetRelative(value, size);
-                if (relative > 0) {
-                    var config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
-
-                    var range = config.getTierConfig(suffix);
-
-                    var min = FieldUtils.readField(range, "min", true);
-                    var max = FieldUtils.readField(range, "max", true);
-                    //var display2 = suffix.getConfigDisplay(itemStack);
-                    //var display = suffix.getDisplay(data, VaultGearModifier.AffixType.SUFFIX, itemStack, true);
-                    toolTip.add(GetJewelRelativeDisplay(suffix, relative, min, max, Screen.hasShiftDown()));
-                }
+        toolTip.add(TextComponent.EMPTY);
+        for (VaultGearModifier<?> suffix : data.getModifiers(VaultGearModifier.AffixType.SUFFIX)) {
+            if (!(suffix.getValue() instanceof Number value)) {
+                continue;
             }
+
+            float relative = value.floatValue() / size;
+            VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack.getItem()).get();
+
+            var range = config.getTierConfig(suffix);
+            var minGeneric = FieldUtils.readField(range, "min", true);
+            var maxGeneric = FieldUtils.readField(range, "max", true);
+
+            if (!(minGeneric instanceof Number min) || !(maxGeneric instanceof Number max)) {
+                continue;
+            }
+
+            toolTip.add(createTooltip(suffix, relative, min, max, Screen.hasShiftDown()));
         }
     }
 
-    public static float GetRelative(Object value, int size) {
-        float relative = 0;
-        if (value instanceof Float) {
-            relative = (float) value / size;
-        } else if (value instanceof Double) {
-            relative = (float) ((double) value / size);
-        } else if (value instanceof Integer) {
-            relative = (float) ((int) value / size);
-        }
-        return relative;
-    }
-    public static Component GetJewelRelativeDisplay(VaultGearModifier suffix, float relative, Object min, Object max, boolean showDetails) {
-        String name;
-        int multiplier = 1;
-        switch (suffix.getModifierIdentifier().toString().substring(10)) {
-            case "copiously":
-                multiplier = 100;
-                name = "Copiously";
-                break;
-            case "item_quantity":
-                multiplier = 100;
-                name = "Quantity";
-                break;
-            case "item_rarity":
-                multiplier = 100;
-                name = "Rarity";
-                break;
-            case "immortality":
-                multiplier = 100;
-                name = "Immortality";
-                break;
-            case "trap_disarming":
-                multiplier = 100;
-                name = "Disarm";
-                break;
-            case "mining_speed":
-                name = "Mining Speed";
-                break;
-            case "reach":
-                name = "Reach";
-                break;
-            case "durability":
-                name = "Durability";
-                break;
-            default:
-                name = suffix.getModifierGroup().substring(3);
-                break;
-        }
+    public static Component createTooltip(VaultGearModifier<?> suffix, float relative, Number min, Number max, boolean showDetails) {
+        int multiplier = suffix.getAttribute().getReader() instanceof DecimalModifierReader.Percentage
+                ? 100
+                : 1;
+
+        String name = switch (suffix.getModifierIdentifier().toString().substring(10)) {
+            case "copiously" -> "Copiously";
+            case "item_quantity" -> "Quantity";
+            case "item_rarity" -> "Rarity";
+            case "immortality" -> "Immortality";
+            case "trap_disarming" -> "Disarm";
+            case "mining_speed" -> "Mining Speed";
+            case "reach" -> "Reach";
+            case "durability" -> "Durability";
+            default -> suffix.getModifierGroup().substring(3);
+        };
         relative *= multiplier;
 
-        var display = suffix.getConfigDisplay(new ItemStack(ModItems.JEWEL));
-        var displayTextComponent = (TextComponent)display.get();
-        //if(display.isPresent())
-        //return (Component)display.get();
-        if(showDetails) {
-            var minRelative = formatText(GetRelative(min, 90) * multiplier);
-            var maxRelative =  formatText(GetRelative(max, 10) * multiplier);
-            return new TextComponent(formatText(relative) + " " + name + "/size §7(" + minRelative  + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
-        } else {
-            return new TextComponent(formatText(relative) + " " + name + "/size").withStyle(displayTextComponent.getStyle());
-        }
+        var display = suffix.getConfigDisplay(DUMMY_JEWEL);
+        var displayTextComponent = (TextComponent) display.get();
 
+        if (showDetails) {
+            var minRelative = Utils.formatText(min.floatValue() / 90 * multiplier);
+            var maxRelative =  Utils.formatText(max.floatValue() / 10 * multiplier);
+            return new TextComponent(Utils.formatText(relative) + " " + name + "/size §7(" + minRelative  + "-" + maxRelative + ")").withStyle(displayTextComponent.getStyle());
+        }
+        return new TextComponent(Utils.formatText(relative) + " " + name + "/size").withStyle(displayTextComponent.getStyle());
     }
 }

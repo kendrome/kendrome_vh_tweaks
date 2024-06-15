@@ -51,8 +51,9 @@ import java.util.function.Function;
 public class GearComparisonTooltips {
     private static final Set<VaultGearAttribute<?>> EXCLUDED_ATTRIBUTES = Set.of(ModGearAttributes.DURABILITY, ModGearAttributes.SOULBOUND);
     private static final List<VaultGearAttribute<?>> ATTRIBUTES_ORDER = new ArrayList<>(VaultGearAttributeRegistry.getRegistry().getValues());
+    private static final VaultGearData DUMMY_DATA = VaultGearData.read(new ItemStack(ModItems.BOOTS));
 
-    public static void showComparison(ItemStack itemStack, List<Component> toolTip) {
+    public static void appendTooltip(ItemStack itemStack, List<Component> toolTip) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (!ClientConfig.GEAR_COMPARISON_TOOLTIPS_ENABLED.get()
                 || !Utils.shouldShow(ClientConfig.GEAR_COMPARISON_TOOLTIPS_KEY.get())
@@ -140,208 +141,207 @@ public class GearComparisonTooltips {
         }
     }
 
+    private static <T> void addTooltipDisplay(VaultGearAttributeInstance<T> vaultGearAttributeInstance,
+                                              String prefix, ChatFormatting formatting, List<Component> toolTip) {
+        vaultGearAttributeInstance.getDisplay(DUMMY_DATA, VaultGearModifier.AffixType.IMPLICIT, ItemStack.EMPTY, true).ifPresent((displayText) -> {
+            //Temporary Fix for getDisplay returning wrong values for attack_speed
+            if (vaultGearAttributeInstance.getAttribute() == ModGearAttributes.ATTACK_SPEED) {
+                displayText = new TextComponent(Utils.formatText((Double) vaultGearAttributeInstance.getValue())).append(new TextComponent(" Attack Speed"));
+            }
 
-        private static <T> void addTooltipDisplay(VaultGearAttributeInstance<T> vaultGearAttributeInstance,
-                                                  String prefix, ChatFormatting formatting, List<Component> toolTip) {
-            vaultGearAttributeInstance.getDisplay(VaultGearData.read(new ItemStack(ModItems.BOOTS)), VaultGearModifier.AffixType.IMPLICIT, ItemStack.EMPTY, true).ifPresent((displayText) -> {
-                //Temporary Fix for getDisplay returning wrong values for attack_speed
-                if (vaultGearAttributeInstance.getAttribute() == ModGearAttributes.ATTACK_SPEED) {
-                    displayText = new TextComponent(Utils.formatText((Double) vaultGearAttributeInstance.getValue())).append(new TextComponent(" Attack Speed"));
-                }
+            toolTip.add(new TextComponent(prefix).withStyle(formatting).append(displayText));
+        });
+    }
 
-                toolTip.add(new TextComponent(prefix).withStyle(formatting).append(displayText));
-            });
-        }
-
-        private static <T> void addMergeableAttribute(List<VaultGearAttributeInstance<?>> addingAttributeInstances,
+    private static <T> void addMergeableAttribute(List<VaultGearAttributeInstance<?>> addingAttributeInstances,
                                                   List<VaultGearAttributeInstance<?>> removingAttributeInstances,
                                                   VaultGearAttributeInstance<T> instance) {
-            if (!(instance.getValue() instanceof Number number) || Math.abs(number.doubleValue()) < 1.0E-4F) {
-                return;
-            }
-
-            if (number.doubleValue() > 0.0) {
-                addingAttributeInstances.add(instance);
-            } else {
-                Utils.invertValue(instance);
-                removingAttributeInstances.add(instance);
-            }
+        if (!(instance.getValue() instanceof Number number) || Math.abs(number.doubleValue()) < 1.0E-4F) {
+            return;
         }
 
-        private static void addAttributes(ItemStack stack,
-                                          Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
-                                          List<VaultGearAttributeInstance<?>> attributeInstances, boolean inverted, int mana) {
+        if (number.doubleValue() > 0.0) {
+            addingAttributeInstances.add(instance);
+        } else {
+            Utils.invertValue(instance);
+            removingAttributeInstances.add(instance);
+        }
+    }
+
+    private static void addAttributes(ItemStack stack,
+                                      Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
+                                      List<VaultGearAttributeInstance<?>> attributeInstances, boolean inverted, int mana) {
+        AttributeGearData data = AttributeGearData.read(stack);
+        Iterable<? extends VaultGearAttributeInstance<?>> instances = (data instanceof VaultGearData gearData)
+                ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData)
+                : data.getAttributes();
+
+        for (VaultGearAttributeInstance<?> instance : instances) {
+            addAttribute(mergeableAttributes, attributeInstances, instance, inverted, mana);
+        }
+    }
+
+    private static int baseMana(Function<EquipmentSlot, ItemStack> getItemBySlot,
+                                Map<String, List<Tuple<ItemStack, Integer>>> curiosItemStacks,
+                                Player player) {
+        int baseMana = 100;
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            ItemStack stack = simulateVaultGear(slot, getItemBySlot.apply(slot));
+            if (stack.isEmpty()) {
+                continue;
+            }
+
+            Item item = stack.getItem();
+            if (item instanceof VaultGearItem gearItem) {
+                if (!gearItem.isIntendedForSlot(stack, slot)) {
+                    continue;
+                }
+            }
+
+            if (item instanceof CuriosGearItem gearItem) {
+                if (!gearItem.isIntendedSlot(stack, slot)) {
+                    continue;
+                }
+            }
+
             AttributeGearData data = AttributeGearData.read(stack);
             Iterable<? extends VaultGearAttributeInstance<?>> instances = (data instanceof VaultGearData gearData)
                     ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData)
                     : data.getAttributes();
 
             for (VaultGearAttributeInstance<?> instance : instances) {
-                addAttribute(mergeableAttributes, attributeInstances, instance, inverted, mana);
+                if (instance.getAttribute() == ModGearAttributes.MANA_ADDITIVE) {
+                    baseMana += (int) instance.getValue();
+                }
             }
         }
 
-        private static int baseMana(Function<EquipmentSlot, ItemStack> getItemBySlot,
-                                    Map<String, List<Tuple<ItemStack, Integer>>> curiosItemStacks,
-                                    Player player) {
-            int baseMana = 100;
-            for (EquipmentSlot slot : EquipmentSlot.values()) {
-                ItemStack stack = simulateVaultGear(slot, getItemBySlot.apply(slot));
-                if (stack.isEmpty()) {
-                    continue;
-                }
-
-                Item item = stack.getItem();
-                if (item instanceof VaultGearItem gearItem) {
-                    if (!gearItem.isIntendedForSlot(stack, slot)) {
-                        continue;
-                    }
-                }
-
-                if (item instanceof CuriosGearItem gearItem) {
-                    if (!gearItem.isIntendedSlot(stack, slot)) {
-                        continue;
-                    }
-                }
-
-                AttributeGearData data = AttributeGearData.read(stack);
-                Iterable<? extends VaultGearAttributeInstance<?>> instances = (data instanceof VaultGearData gearData)
-                        ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData)
-                        : data.getAttributes();
-
-                for (VaultGearAttributeInstance<?> instance : instances) {
+        for (TrinketHelper.TrinketStack<? extends TrinketEffect<?>> gearTrinket : TrinketHelper.getTrinkets(curiosItemStacks, GearAttributeTrinket.class)) {
+            if (gearTrinket.isUsable(player)) {
+                for (VaultGearAttributeInstance<?> instance : ((GearAttributeTrinket) gearTrinket.trinket()).getAttributes()) {
                     if (instance.getAttribute() == ModGearAttributes.MANA_ADDITIVE) {
                         baseMana += (int) instance.getValue();
                     }
                 }
             }
+        }
 
-            for (TrinketHelper.TrinketStack<? extends TrinketEffect<?>> gearTrinket : TrinketHelper.getTrinkets(curiosItemStacks, GearAttributeTrinket.class)) {
-                if (gearTrinket.isUsable(player)) {
-                    for (VaultGearAttributeInstance<?> instance : ((GearAttributeTrinket) gearTrinket.trinket()).getAttributes()) {
+        for (String slot : curiosItemStacks.keySet()) {
+            List<Tuple<ItemStack, Integer>> stacks = curiosItemStacks.get(slot);
+            for (Tuple<ItemStack, Integer> stackTpl : stacks) {
+                ItemStack stack = stackTpl.getA();
+                if (!AttributeGearData.hasData(stack)) {
+                    continue;
+                }
+
+                Item item = stack.getItem();
+                if (item instanceof CuriosGearItem curiosItem && !curiosItem.isIntendedSlot(stack, slot)) {
+                    continue;
+                }
+
+                if (!stack.is(ModItems.MAGNET) || !MagnetItem.isLegacy(stack)) {
+                    for (VaultGearAttributeInstance<?> instance : AttributeGearData.read(stack).getAttributes()) {
                         if (instance.getAttribute() == ModGearAttributes.MANA_ADDITIVE) {
                             baseMana += (int) instance.getValue();
                         }
                     }
                 }
             }
-
-            for (String slot : curiosItemStacks.keySet()) {
-                List<Tuple<ItemStack, Integer>> stacks = curiosItemStacks.get(slot);
-                for (Tuple<ItemStack, Integer> stackTpl : stacks) {
-                    ItemStack stack = stackTpl.getA();
-                    if (!AttributeGearData.hasData(stack)) {
-                        continue;
-                    }
-
-                    Item item = stack.getItem();
-                    if (item instanceof CuriosGearItem curiosItem && !curiosItem.isIntendedSlot(stack, slot)) {
-                        continue;
-                    }
-
-                    if (!stack.is(ModItems.MAGNET) || !MagnetItem.isLegacy(stack)) {
-                        for (VaultGearAttributeInstance<?> instance : AttributeGearData.read(stack).getAttributes()) {
-                            if (instance.getAttribute() == ModGearAttributes.MANA_ADDITIVE) {
-                                baseMana += (int) instance.getValue();
-                            }
-                        }
-                    }
-                }
-            }
-
-            return baseMana;
         }
 
-        private static <T> void addAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
+        return baseMana;
+    }
+
+    private static <T> void addAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
                                          List<VaultGearAttributeInstance<?>> attributeInstances,
                                          VaultGearAttributeInstance<T> instance, boolean inverted, int baseMana) {
-            if (!(instance.getValue() instanceof Number)) {
-                return;
-            }
-
-            VaultGearAttribute<T> attribute = instance.getAttribute();
-            if (attribute == ModGearAttributes.MANA_ADDITIVE_PERCENTILE) {
-                addAttribute(mergeableAttributes, attributeInstances,
-                        new VaultGearAttributeInstance<>(ModGearAttributes.MANA_ADDITIVE, (int) ((Float) instance.getValue() * baseMana)),
-                        inverted, baseMana);
-                return;
-            }
-
-            if (!EXCLUDED_ATTRIBUTES.contains(attribute)) {
-                if (attribute.getAttributeComparator() == null) {
-                    attributeInstances.add(instance);
-                } else {
-                    mergeAttribute(mergeableAttributes, instance, attribute, inverted);
-                }
-            }
+        if (!(instance.getValue() instanceof Number)) {
+            return;
         }
 
-        private static <T> void mergeAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
-                                                 VaultGearAttributeInstance<T> instance, VaultGearAttribute<T> attribute, boolean inverted) {
-            if (mergeableAttributes.containsKey(attribute)) {
-                VaultGearAttributeInstance<T> mergeIntoInstance = (VaultGearAttributeInstance<T>) mergeableAttributes.get(attribute);
-                if (inverted) {
-                    Utils.invertValue(instance);
-                }
+        VaultGearAttribute<T> attribute = instance.getAttribute();
+        if (attribute == ModGearAttributes.MANA_ADDITIVE_PERCENTILE) {
+            addAttribute(mergeableAttributes, attributeInstances,
+                    new VaultGearAttributeInstance<>(ModGearAttributes.MANA_ADDITIVE, (int) ((Float) instance.getValue() * baseMana)),
+                    inverted, baseMana);
+            return;
+        }
 
-                mergeIntoInstance.setValue(attribute.getAttributeComparator().merge(mergeIntoInstance.getValue(), instance.getValue()));
+        if (!EXCLUDED_ATTRIBUTES.contains(attribute)) {
+            if (attribute.getAttributeComparator() == null) {
+                attributeInstances.add(instance);
             } else {
-                if (inverted) {
-                    Utils.invertValue(instance);
-                }
-
-                mergeableAttributes.put(attribute, instance);
+                mergeAttribute(mergeableAttributes, instance, attribute, inverted);
             }
-        }
-
-        private static void addCuriosAttributes(Player player,
-                                                Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
-                                                List<VaultGearAttributeInstance<?>> attributeInstances,
-                                                Map<String, List<Tuple<ItemStack, Integer>>> curiosItemStacks,
-                                                boolean inverted, int baseMana) {
-            TrinketHelper.getTrinkets(curiosItemStacks, GearAttributeTrinket.class).forEach((gearTrinket) -> {
-                if (gearTrinket.isUsable(player)) {
-                    gearTrinket.trinket().getAttributes().forEach((instance) -> {
-                        addAttribute(mergeableAttributes, attributeInstances, instance, inverted, baseMana);
-                    });
-                }
-            });
-
-            curiosItemStacks.forEach((slot, stacks) -> {
-                stacks.forEach((stackTpl) -> {
-                    ItemStack stack = stackTpl.getA();
-                    if (AttributeGearData.hasData(stack)) {
-                        Item item = stack.getItem();
-                        if (item instanceof CuriosGearItem curiosGearItem && !curiosGearItem.isIntendedSlot(stack, slot)) {
-                           return;
-                        }
-
-                        if (!stack.is(ModItems.MAGNET) || !MagnetItem.isLegacy(stack)) {
-                            AttributeGearData.read(stack).getAttributes().forEach((instance) -> {
-                                addAttribute(mergeableAttributes, attributeInstances, instance, inverted, baseMana);
-                            });
-                        }
-                    }
-                });
-            });
-        }
-
-        private static ItemStack simulateVaultGear(EquipmentSlot slot, ItemStack stack) {
-            if (stack.isEmpty()) {
-                return stack;
-            }
-
-            Item item = stack.getItem();
-            if (stack.getItem() instanceof VaultGearItem || !(item instanceof ArmorItem armorItem)) {
-                return stack;
-            }
-
-            ItemStack gearStack = new ItemStack(VaultArmorItem.forSlot(slot));
-            VaultGearData data = VaultGearData.read(gearStack);
-            data.setState(VaultGearState.IDENTIFIED);
-            data.addModifier(VaultGearModifier.AffixType.IMPLICIT, new VaultGearModifier<>(ModGearAttributes.ARMOR, armorItem.getDefense()));
-            data.addModifier(VaultGearModifier.AffixType.IMPLICIT, new VaultGearModifier<>(ModGearAttributes.ARMOR_TOUGHNESS, (int) armorItem.getToughness()));
-            data.write(gearStack);
-            return gearStack;
         }
     }
+
+    private static <T> void mergeAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
+                                           VaultGearAttributeInstance<T> instance, VaultGearAttribute<T> attribute, boolean inverted) {
+        if (inverted) {
+            Utils.invertValue(instance);
+        }
+
+        if (mergeableAttributes.containsKey(attribute)) {
+            VaultGearAttributeInstance<T> mergeIntoInstance = (VaultGearAttributeInstance<T>) mergeableAttributes.get(attribute);
+            mergeIntoInstance.setValue(attribute.getAttributeComparator().merge(mergeIntoInstance.getValue(), instance.getValue()));
+            return;
+        }
+
+        mergeableAttributes.put(attribute, instance);
+    }
+
+    private static void addCuriosAttributes(Player player,
+                                            Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
+                                            List<VaultGearAttributeInstance<?>> attributeInstances,
+                                            Map<String, List<Tuple<ItemStack, Integer>>> curiosItemStacks,
+                                            boolean inverted, int baseMana) {
+        for (TrinketHelper.TrinketStack<? extends TrinketEffect<?>> gearTrinket : TrinketHelper.getTrinkets(curiosItemStacks, GearAttributeTrinket.class)) {
+            if (gearTrinket.isUsable(player)) {
+                for (VaultGearAttributeInstance<?> instance : ((GearAttributeTrinket) gearTrinket.trinket()).getAttributes()) {
+                    addAttribute(mergeableAttributes, attributeInstances, instance, inverted, baseMana);
+                }
+            }
+        }
+
+        for (String slot : curiosItemStacks.keySet()) {
+            List<Tuple<ItemStack, Integer>> stacks = curiosItemStacks.get(slot);
+            for (Tuple<ItemStack, Integer> stackTpl : stacks) {
+                ItemStack stack = stackTpl.getA();
+                if (!AttributeGearData.hasData(stack)) {
+                    continue;
+                }
+
+                Item item = stack.getItem();
+                if (item instanceof CuriosGearItem curiosItem && !curiosItem.isIntendedSlot(stack, slot)) {
+                    continue;
+                }
+
+                if (!stack.is(ModItems.MAGNET) || !MagnetItem.isLegacy(stack)) {
+                    for (VaultGearAttributeInstance<?> instance : AttributeGearData.read(stack).getAttributes()) {
+                        addAttribute(mergeableAttributes, attributeInstances, instance, inverted, baseMana);
+                    }
+                }
+            }
+        }
+    }
+
+    private static ItemStack simulateVaultGear(EquipmentSlot slot, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return stack;
+        }
+
+        Item item = stack.getItem();
+        if (stack.getItem() instanceof VaultGearItem || !(item instanceof ArmorItem armorItem)) {
+            return stack;
+        }
+
+        ItemStack gearStack = new ItemStack(VaultArmorItem.forSlot(slot));
+        VaultGearData data = VaultGearData.read(gearStack);
+        data.setState(VaultGearState.IDENTIFIED);
+        data.addModifier(VaultGearModifier.AffixType.IMPLICIT, new VaultGearModifier<>(ModGearAttributes.ARMOR, armorItem.getDefense()));
+        data.addModifier(VaultGearModifier.AffixType.IMPLICIT, new VaultGearModifier<>(ModGearAttributes.ARMOR_TOUGHNESS, (int) armorItem.getToughness()));
+        data.write(gearStack);
+        return gearStack;
+    }
+}

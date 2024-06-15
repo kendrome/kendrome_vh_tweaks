@@ -14,9 +14,6 @@ public class ClientConfig {
     public static final ForgeConfigSpec.EnumValue<HoldKeys> JEWEL_RELATIVE_TOOLTIPS_KEY;
     public static final ForgeConfigSpec.ConfigValue<Boolean> GEAR_COMPARISON_TOOLTIPS_ENABLED;
     public static final ForgeConfigSpec.EnumValue<HoldKeys> GEAR_COMPARISON_TOOLTIPS_KEY;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> INSCRIPTION_RELATIVE_TOOLTIPS_ENABLED;
-    public static final ForgeConfigSpec.EnumValue<HoldKeys> INSCRIPTION_RELATIVE_TOOLTIPS_KEY;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> INSCRIPTIONS_RELATIVE_OPTIONS;
 
     static {
         BUILDER.push("Configs for Kendrome VH Tweaks");
@@ -33,30 +30,11 @@ public class ClientConfig {
         GEAR_COMPARISON_TOOLTIPS_KEY = BUILDER.comment("Require key to show (None for always show)")
                 .defineEnum("Gear Comparison tooltips key", HoldKeys.None);
 
-        INSCRIPTION_RELATIVE_TOOLTIPS_ENABLED = BUILDER.comment("Show inscription relative tooltips")
-                .define("Enable inscription relative tooltips", true);
-
-        INSCRIPTION_RELATIVE_TOOLTIPS_KEY = BUILDER.comment("Require key to show (None for always show)")
-                .defineEnum("Inscription relative tooltips key", HoldKeys.None);
-
-        List<String> inscriptionOptions = Stream.of(InscriptionOptions.values()).map(Enum::name).collect(Collectors.toList());
-        INSCRIPTIONS_RELATIVE_OPTIONS = BUILDER.comment("Which relatives values to show, Valid options [\"CompletionPerTime\", \"CompletionPerInstability\", \"TimePerInstability\"]")
-                .defineList("Inscription display options",
-                        inscriptionOptions,
-                        entry -> true
-                );
-
         BUILDER.pop();
         SPEC = BUILDER.build();
     }
 
     public enum HoldKeys {
         None, Shift, Alt, Ctrl
-    }
-
-    public enum InscriptionOptions {
-        CompletionPerTime,
-        CompletionPerInstability,
-        TimePerInstability
     }
 }

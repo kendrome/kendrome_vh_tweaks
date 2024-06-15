@@ -1,5 +1,6 @@
 package com.kendrome.kendrome_vh_tweaks.tooltips;
 
+import com.kendrome.kendrome_vh_tweaks.KendromeVhTweaks;
 import com.kendrome.kendrome_vh_tweaks.Utils;
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import iskallia.vault.config.gear.VaultGearTierConfig;
@@ -20,7 +21,7 @@ import java.util.List;
 public class JewelTooltips {
     private static final ItemStack DUMMY_JEWEL = new ItemStack(ModItems.JEWEL);
 
-    public static void appendTooltips(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
+    public static void appendTooltip(ItemStack itemStack, List<Component> toolTip) {
         if (!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get()
                 || !Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
             return;
@@ -37,23 +38,27 @@ public class JewelTooltips {
         }
 
         toolTip.add(TextComponent.EMPTY);
-        for (VaultGearModifier<?> suffix : data.getModifiers(VaultGearModifier.AffixType.SUFFIX)) {
-            if (!(suffix.getValue() instanceof Number value)) {
-                continue;
+        try {
+            for (VaultGearModifier<?> suffix : data.getModifiers(VaultGearModifier.AffixType.SUFFIX)) {
+                if (!(suffix.getValue() instanceof Number value)) {
+                    continue;
+                }
+
+                float relative = value.floatValue() / size;
+                VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack).get();
+
+                var range = config.getTierConfig(suffix);
+                var minGeneric = FieldUtils.readField(range, "min", true);
+                var maxGeneric = FieldUtils.readField(range, "max", true);
+
+                if (!(minGeneric instanceof Number min) || !(maxGeneric instanceof Number max)) {
+                    continue;
+                }
+
+                toolTip.add(createTooltip(suffix, relative, min, max, Screen.hasShiftDown()));
             }
-
-            float relative = value.floatValue() / size;
-            VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack).get();
-
-            var range = config.getTierConfig(suffix);
-            var minGeneric = FieldUtils.readField(range, "min", true);
-            var maxGeneric = FieldUtils.readField(range, "max", true);
-
-            if (!(minGeneric instanceof Number min) || !(maxGeneric instanceof Number max)) {
-                continue;
-            }
-
-            toolTip.add(createTooltip(suffix, relative, min, max, Screen.hasShiftDown()));
+        } catch (Exception e) {
+            KendromeVhTweaks.LOGGER.error(e.getMessage());
         }
     }
 

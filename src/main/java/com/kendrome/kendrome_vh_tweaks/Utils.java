@@ -1,6 +1,7 @@
 package com.kendrome.kendrome_vh_tweaks;
 
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
+import iskallia.vault.gear.attribute.VaultGearAttributeInstance;
 import net.minecraft.client.gui.screens.Screen;
 
 public class Utils {
@@ -28,5 +29,17 @@ public class Utils {
         }
 
         return str;
+    }
+
+    public static <T> void invertValue(VaultGearAttributeInstance<T> instance) {
+        T value = instance.getValue();
+        if (value instanceof Integer i) {
+            value = (T) Integer.valueOf(-i);
+        } else if (value instanceof Float f) {
+            value = (T) Float.valueOf(-f);
+        } else if (value instanceof Double d) {
+            value = (T) Double.valueOf(-d);
+        }
+        instance.setValue(value);
     }
 }

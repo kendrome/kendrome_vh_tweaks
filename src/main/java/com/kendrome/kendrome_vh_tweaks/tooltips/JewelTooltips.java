@@ -7,6 +7,8 @@ import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearAttribute;
 import iskallia.vault.gear.attribute.VaultGearModifier;
+import iskallia.vault.gear.attribute.config.FloatAttributeGenerator;
+import iskallia.vault.gear.attribute.config.NumberRangeGenerator;
 import iskallia.vault.gear.data.VaultGearData;
 import iskallia.vault.gear.reader.DecimalModifierReader;
 import iskallia.vault.init.ModGearAttributes;
@@ -51,10 +53,16 @@ public class JewelTooltips {
                 VaultGearTierConfig config = VaultGearTierConfig.getConfig(itemStack).get();
 
                 var range = config.getTierConfig(suffix);
+                if (!(range instanceof NumberRangeGenerator.NumberRange)) {
+                    toolTip.add(createTooltip(suffix, relative, 0, 0, false));
+                    continue;
+                }
+
                 var minGeneric = FieldUtils.readField(range, "min", true);
                 var maxGeneric = FieldUtils.readField(range, "max", true);
 
                 if (!(minGeneric instanceof Number min) || !(maxGeneric instanceof Number max)) {
+                    toolTip.add(createTooltip(suffix, relative, 0, 0, false));
                     continue;
                 }
 
@@ -84,6 +92,13 @@ public class JewelTooltips {
 
         var display = suffix.getConfigDisplay(DUMMY_JEWEL);
         var displayTextComponent = (TextComponent) display.get();
+
+        if (ClientConfig.JEWEL_RELATIVE_RATING_TOOLTIPS_ENABLED.get() && !(min.doubleValue() == 0.0 && max.doubleValue() == 0.0)) {
+            var maxRelative = max.floatValue() / 10 * multiplier;
+            var rating = relative / maxRelative * 100;
+            String raw = Utils.formatText(rating) + "% perfect " + name + " rating";
+            return new TextComponent(raw).withStyle(displayTextComponent.getStyle());
+        }
 
         String raw = "+" + Utils.formatText(relative) + (percentage ? "% " : " ") + name + " / size";
         MutableComponent line = new TextComponent(raw).withStyle(displayTextComponent.getStyle());

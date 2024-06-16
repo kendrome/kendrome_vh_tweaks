@@ -96,7 +96,7 @@ public class JewelTooltips {
         if (ClientConfig.JEWEL_RELATIVE_RATING_TOOLTIPS_ENABLED.get() && !(min.doubleValue() == 0.0 && max.doubleValue() == 0.0)) {
             var maxRelative = max.floatValue() / 10 * multiplier;
             var rating = relative / maxRelative * 100;
-            String raw = Utils.formatText(rating) + "% perfect " + name + " rating";
+            String raw = Utils.formatText(rating) + "% " + name + " rating";
             return new TextComponent(raw).withStyle(displayTextComponent.getStyle());
         }
 

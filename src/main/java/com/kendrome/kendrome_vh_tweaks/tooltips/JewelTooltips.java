@@ -100,12 +100,13 @@ public class JewelTooltips {
             return new TextComponent(raw).withStyle(displayTextComponent.getStyle());
         }
 
-        String raw = "+" + Utils.formatText(relative) + (percentage ? "% " : " ") + name + " / size";
+        boolean compact = ClientConfig.COMPACT_MODE_ENABLED.get();
+        String raw = "+" + Utils.formatText(relative) + (percentage ? "% " : " ") + name + (compact ? "/size" : " / size");
         MutableComponent line = new TextComponent(raw).withStyle(displayTextComponent.getStyle());
         if (showDetails) {
             var minRelative = Utils.formatText(min.floatValue() / 35 * multiplier);
             var maxRelative = Utils.formatText(max.floatValue() / 10 * multiplier);
-            line.append("§7 (" + minRelative + "-" + maxRelative + ")");
+            line.append(compact ? "§7(" + minRelative + "-" + maxRelative + ")" : "§7 (" + minRelative + "-" + maxRelative + ")");
         }
         return line;
     }

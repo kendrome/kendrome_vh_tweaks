@@ -89,19 +89,17 @@ function initializeCoreMod() {
                 insnList.add(itemStackNode);
                 insnList.add(toolTipNode);
 
-
-
-                ASMAPI.log('INFO', '')
-
-                // Add the method call to the GearComparison.ShowComparison() method
+                // Add the method call to the KendromeVhTweaks#tweakTooltips() method
                 insnList.add(ASMAPI.buildMethodCall(
-                    "com/kendrome/kendrome_vh_tweaks/GearComparison",
-                    "ShowComparison",
+                    "com/kendrome/kendrome_vh_tweaks/KendromeVhTweaks",
+                    "tweakTooltips",
                     "(Lnet/minecraft/world/item/ItemStack;Ljava/util/List;)V",
                     ASMAPI.MethodType.STATIC));
 
                 // Insert the new instructions before the ALOAD instruction
                 instructions.insertBefore(aload, insnList);
+
+                ASMAPI.log('INFO', 'Successfully patched VaultGearTooltipItem#createTooltip');
 
                 // Return the modified classNode
                 return classNode;

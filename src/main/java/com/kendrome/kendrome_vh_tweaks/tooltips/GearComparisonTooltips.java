@@ -8,6 +8,7 @@ import iskallia.vault.gear.attribute.VaultGearAttribute;
 import iskallia.vault.gear.attribute.VaultGearAttributeInstance;
 import iskallia.vault.gear.attribute.VaultGearAttributeRegistry;
 import iskallia.vault.gear.attribute.VaultGearModifier;
+import iskallia.vault.gear.attribute.custom.EffectAvoidanceGearAttribute;
 import iskallia.vault.gear.data.AttributeGearData;
 import iskallia.vault.gear.data.VaultGearData;
 import iskallia.vault.gear.item.CuriosGearItem;
@@ -41,12 +42,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.SwordItem;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 public class GearComparisonTooltips {
@@ -158,7 +154,17 @@ public class GearComparisonTooltips {
     private static <T> void addMergeableAttribute(List<VaultGearAttributeInstance<?>> addingAttributeInstances,
                                                   List<VaultGearAttributeInstance<?>> removingAttributeInstances,
                                                   VaultGearAttributeInstance<T> instance) {
-        if (!(instance.getValue() instanceof Number number) || Math.abs(number.doubleValue()) < 1.0E-4F) {
+        Number number;
+
+        if(instance.getValue() instanceof Number) {
+            number = (Number)instance.getValue();
+        } else if(instance.getValue() instanceof  EffectAvoidanceGearAttribute) {
+            number = ((EffectAvoidanceGearAttribute) instance.getValue()).getChance();
+        } else {
+            return;
+        }
+
+        if(Math.abs(number.doubleValue()) < 1.0E-4F) {
             return;
         }
 
@@ -174,8 +180,9 @@ public class GearComparisonTooltips {
                                       Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
                                       List<VaultGearAttributeInstance<?>> attributeInstances, boolean inverted, int mana) {
         AttributeGearData data = AttributeGearData.read(stack);
+
         Iterable<? extends VaultGearAttributeInstance<?>> instances = (data instanceof VaultGearData gearData)
-                ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData)
+                ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData).toList()
                 : data.getAttributes();
 
         for (VaultGearAttributeInstance<?> instance : instances) {
@@ -208,7 +215,7 @@ public class GearComparisonTooltips {
 
             AttributeGearData data = AttributeGearData.read(stack);
             Iterable<? extends VaultGearAttributeInstance<?>> instances = (data instanceof VaultGearData gearData)
-                    ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData)
+                    ? VaultGearData.Type.ALL_MODIFIERS.getAttributeSource(gearData).toList()
                     : data.getAttributes();
 
             for (VaultGearAttributeInstance<?> instance : instances) {
@@ -257,7 +264,7 @@ public class GearComparisonTooltips {
     private static <T> void addAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
                                          List<VaultGearAttributeInstance<?>> attributeInstances,
                                          VaultGearAttributeInstance<T> instance, boolean inverted, int baseMana) {
-        if (!(instance.getValue() instanceof Number)) {
+        if (!(instance.getValue() instanceof Number || instance.getValue() instanceof EffectAvoidanceGearAttribute)) {
             return;
         }
 
@@ -286,7 +293,8 @@ public class GearComparisonTooltips {
 
         if (mergeableAttributes.containsKey(attribute)) {
             VaultGearAttributeInstance<T> mergeIntoInstance = (VaultGearAttributeInstance<T>) mergeableAttributes.get(attribute);
-            mergeIntoInstance.setValue(attribute.getAttributeComparator().merge(mergeIntoInstance.getValue(), instance.getValue()));
+            Optional<T> merged = attribute.getAttributeComparator().merge(mergeIntoInstance.getValue(), instance.getValue());
+            merged.ifPresent(mergeIntoInstance::setValue);
             return;
         }
 

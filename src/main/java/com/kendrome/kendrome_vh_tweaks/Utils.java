@@ -2,6 +2,7 @@ package com.kendrome.kendrome_vh_tweaks;
 
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
 import iskallia.vault.gear.attribute.VaultGearAttributeInstance;
+import iskallia.vault.gear.attribute.custom.EffectAvoidanceGearAttribute;
 import net.minecraft.client.gui.screens.Screen;
 
 import java.text.DecimalFormat;
@@ -35,6 +36,8 @@ public class Utils {
             value = (T) Float.valueOf(-f);
         } else if (value instanceof Double d) {
             value = (T) Double.valueOf(-d);
+        } else if (value instanceof EffectAvoidanceGearAttribute a) {
+             value = (T)new EffectAvoidanceGearAttribute(a.getEffect(), -a.getChance());
         }
         instance.setValue(value);
     }

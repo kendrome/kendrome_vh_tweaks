@@ -6,7 +6,10 @@ import com.kendrome.kendrome_vh_tweaks.tooltips.JewelTooltips;
 import com.mojang.logging.LogUtils;
 import iskallia.vault.gear.tooltip.VaultGearTooltipItem;
 import iskallia.vault.item.tool.JewelItem;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -39,10 +42,15 @@ public class KendromeVhTweaks {
      */
     @SuppressWarnings("unused")
     public static void tweakTooltips(ItemStack itemStack, List<Component> tooltip) {
-        if (itemStack.getItem() instanceof JewelItem) {
-            JewelTooltips.appendTooltip(itemStack, tooltip);
-        } else {
-            GearComparisonTooltips.appendTooltip(itemStack, tooltip);
+        try {
+            if (itemStack.getItem() instanceof JewelItem) {
+                JewelTooltips.appendTooltip(itemStack, tooltip);
+            } else {
+                GearComparisonTooltips.appendTooltip(itemStack, tooltip);
+            }
+        } catch(Exception e) {
+            tooltip.add(new TextComponent("Error loading tooltip comparison").withStyle(ChatFormatting.RED));
+            LOGGER.error("Unable to load tooltip, exception thrown", e);
         }
     }
 }

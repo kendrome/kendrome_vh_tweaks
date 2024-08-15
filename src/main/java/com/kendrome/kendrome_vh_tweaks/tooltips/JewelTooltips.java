@@ -3,6 +3,7 @@ package com.kendrome.kendrome_vh_tweaks.tooltips;
 import com.kendrome.kendrome_vh_tweaks.KendromeVhTweaks;
 import com.kendrome.kendrome_vh_tweaks.Utils;
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
+import iskallia.vault.client.ClientExpertiseData;
 import iskallia.vault.config.gear.VaultGearTierConfig;
 import iskallia.vault.gear.VaultGearState;
 import iskallia.vault.gear.attribute.VaultGearAttribute;
@@ -13,6 +14,10 @@ import iskallia.vault.gear.data.VaultGearData;
 import iskallia.vault.gear.reader.DecimalModifierReader;
 import iskallia.vault.init.ModGearAttributes;
 import iskallia.vault.init.ModItems;
+import iskallia.vault.skill.base.LearnableSkill;
+import iskallia.vault.skill.base.TieredSkill;
+import iskallia.vault.skill.expertise.type.JewelExpertise;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -26,24 +31,20 @@ public class JewelTooltips {
     private static final Set<VaultGearAttribute<?>> EXCLUDED_ATTRIBUTES = Set.of(ModGearAttributes.HAMMER_SIZE);
     private static final ItemStack DUMMY_JEWEL = new ItemStack(ModItems.JEWEL);
 
-    public static void appendTooltip(ItemStack itemStack, List<Component> toolTip) {
-        if (!ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get()
-                || !Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
-            return;
-        }
+    public static void appendTooltip(ItemStack itemStack, List<Component> toolTip) throws IllegalAccessException {
+        if (ClientConfig.JEWEL_RELATIVE_TOOLTIPS_ENABLED.get()
+                && Utils.shouldShow(ClientConfig.JEWEL_RELATIVE_TOOLTIPS_KEY.get())) {
 
-        VaultGearData data = VaultGearData.read(itemStack);
-        if (data.getState() != VaultGearState.IDENTIFIED) {
-            return;
-        }
+            VaultGearData data = VaultGearData.read(itemStack);
+            if (data.getState() != VaultGearState.IDENTIFIED) {
+                return;
+            }
 
-        int size = data.getFirstValue(ModGearAttributes.JEWEL_SIZE).orElse(0);
-        if (size <= 0) {
-            return;
-        }
+            int size = data.getFirstValue(ModGearAttributes.JEWEL_SIZE).orElse(0);
+            if (size <= 0) {
+                return;
+            }
 
-        toolTip.add(TextComponent.EMPTY);
-        try {
             for (VaultGearModifier<?> suffix : data.getModifiers(VaultGearModifier.AffixType.SUFFIX)) {
                 if (!(suffix.getValue() instanceof Number value) || EXCLUDED_ATTRIBUTES.contains(suffix.getAttribute())) {
                     continue;
@@ -66,10 +67,44 @@ public class JewelTooltips {
                     continue;
                 }
 
+                toolTip.add(TextComponent.EMPTY);
                 toolTip.add(createTooltip(suffix, relative, min, max, Screen.hasShiftDown()));
+
             }
-        } catch (Exception e) {
-            KendromeVhTweaks.LOGGER.error(e.getMessage());
+        }
+
+        if (ClientConfig.JEWEL_FREE_CUTS_TOOLTIPS_ENABLED.get()) {
+            VaultGearData data = VaultGearData.read(itemStack);
+            if (data.getState() != VaultGearState.IDENTIFIED) {
+                return;
+            }
+
+            int size = data.getFirstValue(ModGearAttributes.JEWEL_SIZE).orElse(0);
+            if(size <= 10) {
+                toolTip.add(new TextComponent("Too small to cut").withStyle(ChatFormatting.WHITE));
+                return;
+            }
+
+
+            int currentCuts = 0;
+            if(itemStack.getTag().contains("freeCuts")) {
+                currentCuts = itemStack.getTag().getInt("freeCuts");
+            }
+            int numberOfFreeCuts = 0;
+            boolean hasSkill = false;
+
+            for(TieredSkill learnedTalentNode : ClientExpertiseData.getLearnedTalentNodes()) {
+                LearnableSkill learnedSkill = learnedTalentNode.getChild();
+                if (learnedSkill instanceof JewelExpertise jewelExpertise) {
+                    numberOfFreeCuts = jewelExpertise.getNumberOfFreeCuts();
+                    hasSkill = numberOfFreeCuts > 0;
+                }
+            }
+
+            if(hasSkill) {
+                int cutsAvailable = Math.max(0, numberOfFreeCuts - currentCuts);
+                toolTip.add(new TextComponent("Free Cuts Left: " + cutsAvailable).withStyle(ChatFormatting.WHITE));
+            }
         }
     }
 

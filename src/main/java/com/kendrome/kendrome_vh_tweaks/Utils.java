@@ -1,9 +1,12 @@
 package com.kendrome.kendrome_vh_tweaks;
 
 import com.kendrome.kendrome_vh_tweaks.config.ClientConfig;
+import com.mojang.blaze3d.platform.InputConstants;
 import iskallia.vault.gear.attribute.VaultGearAttributeInstance;
 import iskallia.vault.gear.attribute.custom.EffectAvoidanceGearAttribute;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import org.lwjgl.glfw.GLFW;
 
 import java.text.DecimalFormat;
 
@@ -16,8 +19,12 @@ public class Utils {
             case Ctrl -> Screen.hasControlDown();
             case Alt -> Screen.hasAltDown();
             case Shift -> Screen.hasShiftDown();
+            case Tab -> hasTabDown();
             default -> true;
         };
+    }
+    public static boolean hasTabDown() {
+        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_TAB) || InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_TAB);
     }
 
     public static String formatText(Number number) {

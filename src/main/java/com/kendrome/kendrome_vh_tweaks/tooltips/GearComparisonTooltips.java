@@ -261,10 +261,22 @@ public class GearComparisonTooltips {
         return baseMana;
     }
 
+    private static boolean checkEffectAvoidanceGearAttribute(VaultGearAttributeInstance instance) {
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName("EffectAvoidanceGearAttribute");
+        } catch(ClassNotFoundException e) {
+
+        }
+        if(clazz == null) {
+            return false;
+        }
+        return instance.getValue() instanceof EffectAvoidanceGearAttribute;
+    }
     private static <T> void addAttribute(Map<VaultGearAttribute<?>, VaultGearAttributeInstance<?>> mergeableAttributes,
                                          List<VaultGearAttributeInstance<?>> attributeInstances,
                                          VaultGearAttributeInstance<T> instance, boolean inverted, int baseMana) {
-        if (!(instance.getValue() instanceof Number || instance.getValue() instanceof EffectAvoidanceGearAttribute)) {
+        if (!(instance.getValue() instanceof Number || checkEffectAvoidanceGearAttribute(instance))) {
             return;
         }
 
